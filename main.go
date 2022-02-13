@@ -91,7 +91,7 @@ func main() {
 		return c, nil
 	})
 
-	h.HandleEvent("upload", func(ctx context.Context, s live.Socket, p live.Params) (interface{}, error) {
+	h.HandleEvent("update", func(ctx context.Context, s live.Socket, p live.Params) (interface{}, error) {
 		c := newCounter(s)
 
 		s.UploadConsume("file", func(path string) string {

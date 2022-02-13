@@ -57,6 +57,7 @@ type FileTest struct {
 		Size             int    `json:"Size"`
 		Type             string `json:"-"`
 	} `json:"file"`
+	Field string `json:"field"`
 	Chunk string `json:"chunk"`
 }
 
@@ -70,6 +71,7 @@ type FileMeta struct {
 
 type FileTest2 struct {
 	File  FileMeta
+	Field string
 	Chunk []byte
 }
 
@@ -97,6 +99,7 @@ func (e Event) File() (*FileTest2, error) {
 		File: FileMeta{
 			Name: p.File.Name,
 		},
+		Field: p.Field,
 	}
 
 	// dst := make([]byte, len(p)*len(p)/base64.StdEncoding.DecodedLen(len(p)))

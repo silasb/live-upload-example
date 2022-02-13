@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gorilla/sessions"
@@ -209,13 +210,15 @@ func (h *HttpEngine) _serveWS(ctx context.Context, r *http.Request, session Sess
 						}
 					}
 				case EventUpload:
+					// log.Println(EventUpload)
 					q, err := m.File()
 					if err != nil {
 						panic(err)
 					}
 
 					// tmp file
-					f, err := os.OpenFile(q.File.Name, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+					uploadPath := filepath.Join("tmp/uploads", q.File.Name)
+					f, err := os.OpenFile(uploadPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 					if err != nil {
 						panic(err)
 					}
@@ -225,6 +228,12 @@ func (h *HttpEngine) _serveWS(ctx context.Context, r *http.Request, session Sess
 					if _, err = f.Write(q.Chunk); err != nil {
 						panic(err)
 					}
+
+					fmt.Println(q.Field)
+					// upload := sock.uploads[q.Field]
+					// upload.Entries = append(upload.Entries, uploadPath)
+					// <-upload.done
+					// fmt.Println()
 				default:
 					if err := h.CallEvent(ctx, m.T, sock, m); err != nil {
 						switch {

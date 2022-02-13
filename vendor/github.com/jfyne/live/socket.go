@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/rs/xid"
 	"golang.org/x/net/html"
@@ -176,6 +177,7 @@ func (s *BaseSocket) Messages() chan Event {
 type UploadConfig struct {
 	Entries []string
 	Name    string
+	done    chan bool
 }
 
 func (s *BaseSocket) Upload(field string) {
@@ -192,8 +194,26 @@ func (s *BaseSocket) Upload(field string) {
 func (s *BaseSocket) UploadConsume(field string, fn func(path string) string) {
 	fmt.Printf("consuming.... %v\n", s.uploads[field])
 
-	path := "tmp/uploads/" + "field.png"
-	pubPath := fn(path)
+	// done := make(chan bool, 1)
+	// upload := s.uploads[field]
+	// upload.done = done
 
-	fmt.Println(pubPath)
+	// go waitForUpload(s, field)
+
+	// path := "tmp/uploads/" + "field.png"
+	// pubPath := fn(path)
+
+	// fmt.Println(pubPath)
+}
+
+func waitForUpload(s *BaseSocket, field string) {
+	for {
+		select {
+		case <-s.uploads[field].done:
+			fmt.Println(s.uploads[field])
+		case <-time.After(3 * time.Second):
+			fmt.Print("waiting ")
+			fmt.Println(s.uploads[field].Entries)
+		}
+	}
 }
