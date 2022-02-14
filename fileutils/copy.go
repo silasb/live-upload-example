@@ -18,7 +18,7 @@ func CopyFile(source string, dest string) error {
 
 	// Makes the directory needed to create the dst
 	// file.
-	err = os.MkdirAll(filepath.Dir(dest), 0666)
+	err = os.MkdirAll(filepath.Dir(dest), 0766)
 	if err != nil {
 		return err
 	}

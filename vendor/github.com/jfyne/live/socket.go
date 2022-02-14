@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/rs/xid"
 	"golang.org/x/net/html"
@@ -74,7 +73,7 @@ type BaseSocket struct {
 	data   interface{}
 	dataMu sync.Mutex
 
-	uploads map[string]UploadConfig
+	uploads map[string]*UploadConfig
 }
 
 // NewBaseSocket creates a new default socket.
@@ -175,45 +174,35 @@ func (s *BaseSocket) Messages() chan Event {
 }
 
 type UploadConfig struct {
-	Entries []string
-	Name    string
-	done    chan bool
+	Entries    []string
+	Name       string
+	done       chan bool
+	done2      bool
+	Bytes      int
+	Size       int
+	UploadPath string
 }
 
 func (s *BaseSocket) Upload(field string) {
-	uploadConfig := UploadConfig{
+	uploadConfig := &UploadConfig{
 		Name: field,
 	}
 
-	s.uploads = make(map[string]UploadConfig)
+	s.uploads = make(map[string]*UploadConfig)
 	s.uploads[field] = uploadConfig
 
 	fmt.Println(s.uploads[field])
 }
 
 func (s *BaseSocket) UploadConsume(field string, fn func(path string) string) {
-	fmt.Printf("consuming.... %v\n", s.uploads[field])
+	upload := s.uploads[field]
+	fmt.Printf("%+v\n", upload)
 
-	// done := make(chan bool, 1)
-	// upload := s.uploads[field]
-	// upload.done = done
+	if upload.done2 {
+		// path := "tmp/uploads/" + "field.png"
+		path := upload.UploadPath
+		pubPath := fn(path)
 
-	// go waitForUpload(s, field)
-
-	// path := "tmp/uploads/" + "field.png"
-	// pubPath := fn(path)
-
-	// fmt.Println(pubPath)
-}
-
-func waitForUpload(s *BaseSocket, field string) {
-	for {
-		select {
-		case <-s.uploads[field].done:
-			fmt.Println(s.uploads[field])
-		case <-time.After(3 * time.Second):
-			fmt.Print("waiting ")
-			fmt.Println(s.uploads[field].Entries)
-		}
+		fmt.Println(pubPath)
 	}
 }

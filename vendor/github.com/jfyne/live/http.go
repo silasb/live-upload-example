@@ -223,17 +223,33 @@ func (h *HttpEngine) _serveWS(ctx context.Context, r *http.Request, session Sess
 						panic(err)
 					}
 
+					// fi, err := f.Stat()
+					// if err != nil {
+					// 	panic(err)
+					// }
+
 					defer f.Close()
 
-					if _, err = f.Write(q.Chunk); err != nil {
+					pro, err := f.Write(q.Chunk)
+					if err != nil {
 						panic(err)
 					}
 
-					fmt.Println(q.Field)
-					// upload := sock.uploads[q.Field]
-					// upload.Entries = append(upload.Entries, uploadPath)
-					// <-upload.done
-					// fmt.Println()
+					// fmt.Printf("%+v\n", sock.uploads)
+
+					upload := sock.uploads[q.Field]
+					upload.Bytes += pro
+					upload.Size = q.File.Size
+					// fmt.Println(upload)
+					if int64(upload.Bytes) == int64(q.File.Size) {
+						fmt.Printf("The file is %d bytes long\n", q.File.Size)
+						upload.UploadPath = uploadPath
+						// <-upload.done
+						upload.done2 = true
+					}
+					// fmt.Println(upload.done)
+					// fmt.Println(upload.Bytes, upload.Size)
+
 				default:
 					if err := h.CallEvent(ctx, m.T, sock, m); err != nil {
 						switch {

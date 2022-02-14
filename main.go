@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"live-testing/fileutils"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -96,13 +97,16 @@ func main() {
 
 		s.UploadConsume("file", func(path string) string {
 			dest := filepath.Join("public/uploads", filepath.Base(path))
-			// fileutils.CopyFile(spath, dest)
+			err := fileutils.CopyFile(path, dest)
+			if err != nil {
+				panic(err)
+			}
 
 			// dest = Path.join("priv/static/uploads", Path.basename(path))
 			// File.cp!(path, dest)
 			// Routes.static_path(socket, "/uploads/#{Path.basename(dest)}")
 
-			return "/uploads/" + filepath.Base(dest)
+			return filepath.Join("/uploads", filepath.Base(dest))
 		})
 
 		// fmt.Printf("s: %v\n", s)

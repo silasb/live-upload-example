@@ -98,6 +98,7 @@ func (e Event) File() (*FileTest2, error) {
 		Chunk: b,
 		File: FileMeta{
 			Name: p.File.Name,
+			Size: p.File.Size,
 		},
 		Field: p.Field,
 	}
