@@ -55,8 +55,8 @@ type Socket interface {
 	// Messages returns the channel of events on this socket.
 	Messages() chan Event
 
-	Upload(field string)
-	UploadConsume(field string, fn func(path string) string)
+	Upload(field string) *UploadConfig
+	UploadConsume(field string, fn func(path string) string) *string
 }
 
 // BaseSocket describes a socket from the outside.
@@ -174,35 +174,48 @@ func (s *BaseSocket) Messages() chan Event {
 }
 
 type UploadConfig struct {
-	Entries    []string
-	Name       string
-	done       chan bool
-	done2      bool
-	Bytes      int
-	Size       int
-	UploadPath string
+	Entries     []string
+	Name        string
+	Ref         string
+	done2       bool
+	Written     int
+	Size        int
+	UploadPath  string
+	OrignalName string
+	PubPath     string
 }
 
-func (s *BaseSocket) Upload(field string) {
+func (u *UploadConfig) Progress() float32 {
+	return float32(u.Written) / float32(u.Size) * 100
+}
+
+func (s *BaseSocket) Upload(field string) *UploadConfig {
+	if val, ok := s.uploads[field]; ok {
+		return val
+	}
+
 	uploadConfig := &UploadConfig{
 		Name: field,
+		Ref:  "live-" + xid.New().String(),
 	}
 
 	s.uploads = make(map[string]*UploadConfig)
 	s.uploads[field] = uploadConfig
 
-	fmt.Println(s.uploads[field])
+	return uploadConfig
 }
 
-func (s *BaseSocket) UploadConsume(field string, fn func(path string) string) {
+func (s *BaseSocket) UploadConsume(field string, fn func(path string) string) *string {
 	upload := s.uploads[field]
-	fmt.Printf("%+v\n", upload)
 
+	// unsafe, need mutex
 	if upload.done2 {
-		// path := "tmp/uploads/" + "field.png"
 		path := upload.UploadPath
 		pubPath := fn(path)
 
-		fmt.Println(pubPath)
+		upload.PubPath = pubPath
+		return &pubPath
 	}
+
+	return nil
 }

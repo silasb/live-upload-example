@@ -38,6 +38,7 @@ const (
 
 type counter struct {
 	Value int
+	File  *live.UploadConfig
 }
 
 func newCounter(s live.Socket) *counter {
@@ -53,9 +54,13 @@ func main() {
 
 	// Set the mount function for this handler.
 	h.HandleMount(func(ctx context.Context, s live.Socket) (interface{}, error) {
-		s.Upload("file")
+		c := newCounter(s)
+		// build or return an uploadConfig and assign it to our file
+		uploadConfig := s.Upload("file")
+		c.File = uploadConfig
+
 		// This will initialise the counter if needed.
-		return newCounter(s), nil
+		return c, nil
 	})
 
 	// Client side events.
@@ -68,7 +73,7 @@ func main() {
 		// Increment the value by one.
 		c.Value += 1
 
-		if err := s.Broadcast("newmessage", c.Value); err != nil {
+		if err := s.Broadcast("newmessage", c); err != nil {
 			return c, fmt.Errorf("failed broadcasting new messaage: %w", err)
 		}
 
@@ -84,7 +89,7 @@ func main() {
 		// Decrement the value by one.
 		c.Value -= 1
 
-		if err := s.Broadcast("newmessage", c.Value); err != nil {
+		if err := s.Broadcast("newmessage", c); err != nil {
 			return c, fmt.Errorf("failed broadcasting new messaage: %w", err)
 		}
 
@@ -92,10 +97,24 @@ func main() {
 		return c, nil
 	})
 
+	// was thinking this might be a good escape hatch...
+	// h.HandleEvent("allow_upload", func(ctx context.Context, s live.Socket, p live.Params) (interface{}, error) {
+	// 	// log.Println(EventUpload)
+	// 	c := newCounter(s)
+
+	// 	c.File = s.Upload("file")
+
+	// 	return c, nil
+	// })
+
 	h.HandleEvent("update", func(ctx context.Context, s live.Socket, p live.Params) (interface{}, error) {
 		c := newCounter(s)
+		// build or return an uploadConfig and assign it to our file
+		c.File = s.Upload("file")
 
-		s.UploadConsume("file", func(path string) string {
+		pubPath := s.UploadConsume("file", func(path string) string {
+			fmt.Printf("Processing upload: %s at path: %s with original name as: %s\n", "file", path, c.File.OrignalName)
+
 			dest := filepath.Join("public/uploads", filepath.Base(path))
 			err := fileutils.CopyFile(path, dest)
 			if err != nil {
@@ -109,9 +128,11 @@ func main() {
 			return filepath.Join("/uploads", filepath.Base(dest))
 		})
 
-		// fmt.Printf("s: %v\n", s)
+		fmt.Printf("consumed: %s\n", *pubPath)
 
-		// fmt.Printf("p: %v\n", p["myFile"])
+		// if err := s.Broadcast("newmessage", c); err != nil {
+		// 	return c, fmt.Errorf("failed broadcasting new messaage: %w", err)
+		// }
 
 		return c, nil
 	})
@@ -126,17 +147,17 @@ func main() {
 	// })
 
 	h.HandleSelf("newmessage", func(ctx context.Context, s live.Socket, data interface{}) (interface{}, error) {
-		c := newCounter(s)
 
 		// Here we don't append to messages as we don't want to use
 		// loads of memory. `live-update="append"` handles the appending
 		// of messages in the DOM.
 		// m.Messages = []Message{NewMessage(data)}
-		q, ok := data.(int)
+		c, ok := data.(*counter)
 		if !ok {
-			q = 0
+			c = newCounter(s)
 		}
-		c.Value = q
+		c.File = s.Upload("file")
+		// c.Value = q
 		return c, nil
 	})
 
@@ -152,7 +173,7 @@ func main() {
 	// http.Handle("/auto.js.map", http.FileServer(http.Dir("./vendor/web/browser")))
 	// http.Handle("/upload", media.Media{})
 
-	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./public"))))
+	http.Handle("/uploads/", http.FileServer(http.Dir("./public")))
 
 	fmt.Println("starting on :8080")
 	http.ListenAndServe(":8080", nil)

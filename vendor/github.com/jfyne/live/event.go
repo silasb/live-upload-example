@@ -25,6 +25,7 @@ const (
 	// redirect.
 	EventRedirect = "redirect"
 
+	// EvenUpload sent in order to handle uploads
 	EventUpload = "allow_upload"
 )
 

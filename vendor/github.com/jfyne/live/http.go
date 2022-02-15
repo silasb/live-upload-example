@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -210,46 +211,43 @@ func (h *HttpEngine) _serveWS(ctx context.Context, r *http.Request, session Sess
 						}
 					}
 				case EventUpload:
-					// log.Println(EventUpload)
 					q, err := m.File()
 					if err != nil {
 						panic(err)
 					}
 
+					// possibly unsafe, we probably need a mutex to set these
+					upload := sock.uploads[q.Field]
+					upload.OrignalName = q.File.Name
+					upload.Size = q.File.Size
+
 					// tmp file
-					uploadPath := filepath.Join("tmp/uploads", q.File.Name)
+					cleanExt := path.Ext(q.File.Name)
+					uploadPath := filepath.Join("tmp/uploads", upload.Ref+cleanExt)
 					f, err := os.OpenFile(uploadPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 					if err != nil {
 						panic(err)
 					}
 
-					// fi, err := f.Stat()
-					// if err != nil {
-					// 	panic(err)
-					// }
-
 					defer f.Close()
 
-					pro, err := f.Write(q.Chunk)
+					n, err := f.Write(q.Chunk)
 					if err != nil {
 						panic(err)
 					}
 
-					// fmt.Printf("%+v\n", sock.uploads)
+					// possibly unsafe, we probably need a mutex to set these
+					upload.Written += n
 
-					upload := sock.uploads[q.Field]
-					upload.Bytes += pro
-					upload.Size = q.File.Size
-					// fmt.Println(upload)
-					if int64(upload.Bytes) == int64(q.File.Size) {
+					if int64(upload.Written) == int64(q.File.Size) {
 						fmt.Printf("The file is %d bytes long\n", q.File.Size)
 						upload.UploadPath = uploadPath
-						// <-upload.done
+						// unsafe, need mutex
 						upload.done2 = true
 					}
-					// fmt.Println(upload.done)
-					// fmt.Println(upload.Bytes, upload.Size)
 
+				// how do we assign the state to render the template?
+				// sock.Assign(upload)
 				default:
 					if err := h.CallEvent(ctx, m.T, sock, m); err != nil {
 						switch {

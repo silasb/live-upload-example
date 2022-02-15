@@ -27,6 +27,14 @@
     >
       <input type="file" name="file" />
       <input type="submit" value="upload" />
+
+      <p>
+        <progress value={{.File.Progress }} max="100"> {{ .File.Progress }}% </progress>
+      </p>
+
+      <div>{{.File}}</div>
+      <div>{{.File.Ref}}</div>
+      <img src="{{.File.PubPath}}" />
     </form>
 
 {{ end }}
