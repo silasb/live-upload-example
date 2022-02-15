@@ -1,7 +1,7 @@
 import { Socket } from "./socket";
 import { UpdateURLParams, GetParams, GetURLParams, Params } from "./params";
 import { EventDispatch, LiveEvent } from "./event";
-import EntryUploader from './entry_uploader.js'
+import { EntryUploader, UploadEntry } from './entry_uploader'
 
 /**
  * Standard event handler class. Clicks, focus and blur.
@@ -333,7 +333,6 @@ class Submit extends LiveHandler {
         return (e: Event) => {
             if (e.preventDefault) e.preventDefault();
             var vals = { ...params };
-            var upload = {}
 
             const t = element?.getAttribute(this.attribute);
             if (t === null) {
@@ -365,7 +364,7 @@ class Submit extends LiveHandler {
             data.forEach((value: any, name: string) => {
                 const isFile = typeof value.name == 'string'
                 if(isFile) {
-                    upload = {
+                    const upload = {
                         file: value,
                         field: name,
                         progress: (n) => {},//{ console.log(n) },

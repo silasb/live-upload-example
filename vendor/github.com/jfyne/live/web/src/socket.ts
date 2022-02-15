@@ -104,7 +104,9 @@ export class Socket {
     static push(e: LiveEvent) {
         if (this.ready === false) {
             console.warn("connection not ready for send of event", e);
-            return;
+            return {
+                receive: (res, cb) => { }
+            }
         }
         this.conn.send(e.serialize());
 
